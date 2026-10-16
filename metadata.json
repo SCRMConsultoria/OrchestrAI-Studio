@@ -1,0 +1,6 @@
+{
+  "name": "OrchestrAI Studio",
+  "description": "Orquestrador empresarial de agentes autônomos com editor visual por nós, interface por voz, suporte multimodelo, avaliações em linha (evals), versionamento com rollback e gestão financeira.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

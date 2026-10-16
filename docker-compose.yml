@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: orchestrai_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: orchestrai_db
+      POSTGRES_USER: orchestrai
+      POSTGRES_PASSWORD: orchestrai_secret_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./src/backend/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orchestrai -d orchestrai_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - orchestrai-net
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: orchestrai_studio
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://orchestrai:orchestrai_secret_password@postgres:5432/orchestrai_db
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: orchestrai_db
+      POSTGRES_USER: orchestrai
+      POSTGRES_PASSWORD: orchestrai_secret_password
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - orchestrai-net
+
+volumes:
+  pgdata:
+    driver: local
+
+networks:
+  orchestrai-net:
+    driver: bridge
