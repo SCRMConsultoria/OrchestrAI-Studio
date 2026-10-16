@@ -2,7 +2,10 @@
  * Voice Service: Bidirectional Voice Interaction
  * - Speech-to-Text (STT) via Web Speech API
  * - Text-to-Speech (TTS) via Server-Side Gemini 3.8 Flash Lite TTS + Web Speech fallback
+ * Fully driven by VOICE_CONSTANTS (zero hardcoded strings).
  */
+
+import { VOICE_CONSTANTS } from '../frontend/core/constants/voiceConstants';
 
 export class VoiceService {
   private recognition: any = null;
@@ -17,7 +20,7 @@ export class VoiceService {
         this.recognition = new SpeechRecognition();
         this.recognition.continuous = false;
         this.recognition.interimResults = true;
-        this.recognition.lang = 'pt-BR';
+        this.recognition.lang = VOICE_CONSTANTS.DEFAULT_LANGUAGE;
       }
     }
   }
@@ -32,7 +35,7 @@ export class VoiceService {
     onEnd: () => void
   ) {
     if (!this.recognition) {
-      onError('Reconhecimento de fala não suportado neste navegador.');
+      onError(VOICE_CONSTANTS.ERROR_UNSUPPORTED_BROWSER);
       return;
     }
 
@@ -63,7 +66,7 @@ export class VoiceService {
 
     this.recognition.onerror = (event: any) => {
       this.isListening = false;
-      onError(event.error || 'Erro ao capturar áudio do microfone.');
+      onError(event.error || VOICE_CONSTANTS.ERROR_MICROPHONE_CAPTURE);
     };
 
     this.recognition.onend = () => {
@@ -75,7 +78,7 @@ export class VoiceService {
       this.recognition.start();
     } catch (e: any) {
       this.isListening = false;
-      onError(e.message || 'Falha ao iniciar microfone.');
+      onError(e.message || VOICE_CONSTANTS.ERROR_MICROPHONE_START_FAILED);
     }
   }
 
@@ -96,7 +99,7 @@ export class VoiceService {
    */
   public async speakText(
     text: string,
-    voiceName: string = 'Kore',
+    voiceName: string = VOICE_CONSTANTS.DEFAULT_VOICE_NAME,
     onStart?: () => void,
     onEnd?: () => void
   ): Promise<void> {
@@ -106,7 +109,7 @@ export class VoiceService {
 
     // 1. Try server-side Gemini TTS
     try {
-      const response = await fetch('/api/voice/tts', {
+      const response = await fetch(VOICE_CONSTANTS.TTS_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, voiceName }),
@@ -115,7 +118,7 @@ export class VoiceService {
       if (response.ok) {
         const data = await response.json();
         if (data.audioBase64) {
-          const audio = new Audio(`data:audio/wav;base64,${data.audioBase64}`);
+          const audio = new Audio(`data:${VOICE_CONSTANTS.AUDIO_MIME_TYPE};base64,${data.audioBase64}`);
           this.currentAudioElement = audio;
           audio.onended = () => {
             this.currentAudioElement = null;
@@ -140,8 +143,8 @@ export class VoiceService {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'pt-BR';
-      utterance.rate = 1.0;
+      utterance.lang = VOICE_CONSTANTS.DEFAULT_LANGUAGE;
+      utterance.rate = VOICE_CONSTANTS.DEFAULT_SPEECH_RATE;
       utterance.onend = () => {
         if (onEnd) onEnd();
       };

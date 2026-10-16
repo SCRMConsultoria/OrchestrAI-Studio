@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { GoogleGenAI } from '@google/genai';
+import { BACKEND_VOICE_CONSTANTS } from '../constants/voiceConstants';
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY || '',
@@ -12,15 +13,15 @@ const ai = new GoogleGenAI({
 
 export async function synthesizeSpeech(req: Request, res: Response) {
   try {
-    const { text, voiceName = 'Kore' } = req.body;
+    const { text, voiceName = BACKEND_VOICE_CONSTANTS.DEFAULT_VOICE_NAME } = req.body;
     if (!text) {
-      return res.status(400).json({ error: 'Text is required for TTS' });
+      return res.status(400).json({ error: BACKEND_VOICE_CONSTANTS.ERROR_TEXT_REQUIRED });
     }
 
-    const spokenText = text.slice(0, 1000);
+    const spokenText = text.slice(0, BACKEND_VOICE_CONSTANTS.MAX_TEXT_SLICE);
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash-lite-tts',
+      model: BACKEND_VOICE_CONSTANTS.DEFAULT_VOICE_MODEL,
       contents: [
         {
           role: 'user',
@@ -31,7 +32,7 @@ export async function synthesizeSpeech(req: Request, res: Response) {
         responseModalities: ['AUDIO'],
         speechConfig: {
           voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: voiceName || 'Kore' },
+            prebuiltVoiceConfig: { voiceName: voiceName || BACKEND_VOICE_CONSTANTS.DEFAULT_VOICE_NAME },
           },
         },
       },
@@ -39,16 +40,16 @@ export async function synthesizeSpeech(req: Request, res: Response) {
 
     const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
     if (!base64Audio) {
-      return res.status(500).json({ error: 'Nenhum áudio gerado pelo modelo' });
+      return res.status(500).json({ error: BACKEND_VOICE_CONSTANTS.ERROR_NO_AUDIO });
     }
 
     res.json({
       audioBase64: base64Audio,
-      mimeType: 'audio/wav',
+      mimeType: BACKEND_VOICE_CONSTANTS.AUDIO_MIME_TYPE,
       voiceName,
     });
   } catch (error: any) {
     console.error('Error in voice controller:', error);
-    res.status(500).json({ error: error.message || 'Erro na síntese de áudio' });
+    res.status(500).json({ error: error.message || BACKEND_VOICE_CONSTANTS.ERROR_TTS_FAILED });
   }
 }

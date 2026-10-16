@@ -35,10 +35,9 @@ RUN npm install --omit=dev && npm install -g tsx
 # Copy built frontend assets from builder
 COPY --from=builder /app/dist ./dist
 
-# Copy backend server code and configs
+# Copy backend server code, database scripts and dependencies
 COPY server.ts ./
-COPY src/backend ./src/backend
-COPY src/types ./src/types
+COPY src ./src
 COPY tsconfig.json ./
 
 # Expose production port

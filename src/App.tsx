@@ -36,11 +36,13 @@ import { ModelsCatalogPanel } from './frontend/features/models/ModelsCatalogPane
 import { CustomStudioModal } from './frontend/features/theme/CustomStudioModal';
 import { Tooltip } from './frontend/shared/components/Tooltip';
 
-// Angular-style Signals & Persistent Storage Engine
-import { signal, useSignal } from './frontend/core/signals/signal';
+// Angular Signals & Persistent Storage Engine
+import { signal } from './frontend/core/signals/signal';
+import { useSignal } from './frontend/core/signals/reactAdapter';
 import { PersistentStorage } from './frontend/core/storage/persistentStorage';
 import { LanguageCode, TRANSLATIONS } from './frontend/core/constants/translations';
 import { PanelLeftOpen } from 'lucide-react';
+import { ApiService } from './frontend/core/services/apiService';
 
 // Initialize Angular Signals with persisted state
 const languageSignal = signal<LanguageCode>(PersistentStorage.getLanguage('pt'));
@@ -95,6 +97,21 @@ export default function App() {
   const [currentRole, setCurrentRole] = useState<UserRole>('admin');
   const [isAudioMuted, setIsAudioMuted] = useState<boolean>(false);
   const [isCustomStudioOpen, setIsCustomStudioOpen] = useState<boolean>(false);
+
+  // Load baseline & user data dynamically from backend PostgreSQL / database API
+  useEffect(() => {
+    ApiService.loadInitialData().then((dbData) => {
+      if (dbData) {
+        if (dbData.agents?.length) setAgents(dbData.agents);
+        if (dbData.workflows?.length) setWorkflows(dbData.workflows);
+        if (dbData.runs?.length) setRuns(dbData.runs);
+        if (dbData.evals?.length) setEvalCases(dbData.evals);
+        if (dbData.versions?.length) setVersions(dbData.versions);
+        if (dbData.users?.length) setUsers(dbData.users);
+        if (dbData.invoices?.length) setInvoices(dbData.invoices);
+      }
+    });
+  }, []);
 
   // Persist language on change
   const handleLanguageChange = (newLang: LanguageCode) => {
@@ -179,13 +196,14 @@ export default function App() {
     } as React.CSSProperties;
   };
 
-  // Handlers with persistent storage synchronization
+  // Handlers with persistent storage & PostgreSQL backend synchronization
   const handleAddRun = (newRun: WorkflowRun) => {
     setRuns((prev) => {
       const updated = [newRun, ...prev];
       PersistentStorage.setRuns(updated);
       return updated;
     });
+    ApiService.saveRun(newRun);
   };
 
   const handleUpdateAgent = (updatedAgent: AgentConfig) => {
@@ -194,6 +212,7 @@ export default function App() {
       PersistentStorage.setAgents(updated);
       return updated;
     });
+    ApiService.saveAgent(updatedAgent);
   };
 
   const handleSaveVersion = (agentId: string, commitMsg: string) => {
@@ -259,6 +278,7 @@ export default function App() {
       PersistentStorage.setEvalCases(updated);
       return updated;
     });
+    ApiService.saveEval(evalCase);
   };
 
   const handleAddInvoice = (inv: InvoiceItem) => {
@@ -275,12 +295,15 @@ export default function App() {
       PersistentStorage.setUsers(updated);
       return updated;
     });
+    ApiService.saveUser(user);
   };
 
   const handleUpdateUserRole = (userId: string, newRole: UserRole) => {
     setUsers((prev) => {
       const updated = prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u));
       PersistentStorage.setUsers(updated);
+      const target = updated.find((u) => u.id === userId);
+      if (target) ApiService.saveUser(target);
       return updated;
     });
   };
@@ -293,6 +316,8 @@ export default function App() {
           : u
       );
       PersistentStorage.setUsers(updated);
+      const target = updated.find((u) => u.id === userId);
+      if (target) ApiService.saveUser(target);
       return updated;
     });
   };
@@ -303,6 +328,8 @@ export default function App() {
         u.id === userId ? { ...u, monthlyBudgetCapUsd: newCap } : u
       );
       PersistentStorage.setUsers(updated);
+      const target = updated.find((u) => u.id === userId);
+      if (target) ApiService.saveUser(target);
       return updated;
     });
   };

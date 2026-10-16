@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { GoogleGenAI } from '@google/genai';
+import { MODEL_CONSTANTS } from '../constants/modelConstants';
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY || '',
@@ -14,28 +15,27 @@ export async function generateModelContent(req: Request, res: Response) {
   try {
     const {
       prompt,
-      model = 'gemini-3.8-flash',
-      provider = 'google',
+      model = MODEL_CONSTANTS.DEFAULT_MODEL,
+      provider = MODEL_CONSTANTS.DEFAULT_PROVIDER,
       systemInstruction,
-      temperature = 0.7,
-      topP = 0.95,
-      topK = 40,
+      temperature = MODEL_CONSTANTS.DEFAULT_TEMPERATURE,
+      topP = MODEL_CONSTANTS.DEFAULT_TOP_P,
+      topK = MODEL_CONSTANTS.DEFAULT_TOP_K,
       tools = [],
       guardrails,
     } = req.body;
 
     if (!prompt) {
-      return res.status(400).json({ error: 'Prompt is required' });
+      return res.status(400).json({ error: MODEL_CONSTANTS.ERROR_PROMPT_REQUIRED });
     }
 
     // 1. Guardrail Pre-Execution Checks
     if (guardrails?.blockPromptInjection) {
-      const suspiciousPatterns = [/ignore previous instructions/i, /system prompt/i, /jailbreak/i, /developer mode/i];
-      for (const pattern of suspiciousPatterns) {
+      for (const pattern of MODEL_CONSTANTS.SUSPICIOUS_PATTERNS) {
         if (pattern.test(prompt)) {
           return res.status(400).json({
-            error: 'Guardrail violation: Potencial injeção de prompt detectada.',
-            blockedBy: 'PromptInjectionShield',
+            error: MODEL_CONSTANTS.ERROR_PROMPT_INJECTION,
+            blockedBy: MODEL_CONSTANTS.SHIELD_PROMPT_INJECTION,
           });
         }
       }
@@ -45,8 +45,8 @@ export async function generateModelContent(req: Request, res: Response) {
       for (const kw of guardrails.blockedKeywords) {
         if (kw && prompt.toLowerCase().includes(kw.toLowerCase())) {
           return res.status(400).json({
-            error: `Guardrail violation: A palavra-chave '${kw}' foi bloqueada pela política de segurança.`,
-            blockedBy: 'KeywordBlockShield',
+            error: MODEL_CONSTANTS.ERROR_KEYWORD_BLOCKED(kw),
+            blockedBy: MODEL_CONSTANTS.SHIELD_KEYWORD_BLOCK,
           });
         }
       }
@@ -58,8 +58,8 @@ export async function generateModelContent(req: Request, res: Response) {
     if (provider === 'google' || !provider) {
       const config: any = {
         temperature: Number(temperature),
-        topP: Number(topP),
-        topK: Number(topK),
+        topP: Number(topP || MODEL_CONSTANTS.DEFAULT_TOP_P),
+        topK: Number(topK || MODEL_CONSTANTS.DEFAULT_TOP_K),
       };
 
       if (systemInstruction) {
@@ -73,7 +73,7 @@ export async function generateModelContent(req: Request, res: Response) {
       let response: any;
       try {
         response = await ai.models.generateContent({
-          model: model || 'gemini-3.8-flash',
+          model: model || MODEL_CONSTANTS.DEFAULT_MODEL,
           contents: prompt,
           config,
         });
@@ -149,7 +149,7 @@ Respond accurately and adhere strictly to requested formatting and cognitive sty
       config: {
         systemInstruction: simulatedSystem,
         temperature: Number(temperature),
-        topP: Number(topP),
+        topP: Number(topP || MODEL_CONSTANTS.DEFAULT_TOP_P),
       },
     });
 
@@ -168,6 +168,6 @@ Respond accurately and adhere strictly to requested formatting and cognitive sty
     });
   } catch (error: any) {
     console.error('Error in model controller:', error);
-    res.status(500).json({ error: error.message || 'Falha ao processar requisição do modelo' });
+    res.status(500).json({ error: error.message || MODEL_CONSTANTS.ERROR_GENERATION_FAILED });
   }
 }
