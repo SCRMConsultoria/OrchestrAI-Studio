@@ -1,12 +1,15 @@
 import { Request, Response } from 'express';
 import { dbClient } from '../db/client';
+import { DB_CONSTANTS } from '../constants/dbConstants';
+import { LOG_CONSTANTS } from '../constants/logConstants';
 
 export async function getDbStatus(req: Request, res: Response) {
   try {
     const status = dbClient.getStatus();
     res.json(status);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Erro ao verificar banco de dados' });
+    console.error(LOG_CONSTANTS.DATABASE_CONTROLLER_ERROR, error);
+    res.status(500).json({ error: error.message || DB_CONSTANTS.ERROR_DB_STATUS });
   }
 }
 
@@ -15,7 +18,8 @@ export async function getAllData(req: Request, res: Response) {
     const data = await dbClient.getAllData();
     res.json(data);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Erro ao carregar dados' });
+    console.error(LOG_CONSTANTS.DATABASE_CONTROLLER_ERROR, error);
+    res.status(500).json({ error: error.message || DB_CONSTANTS.ERROR_LOAD_DATA });
   }
 }
 
@@ -24,7 +28,8 @@ export async function getAgents(req: Request, res: Response) {
     const agents = await dbClient.getAgents();
     res.json(agents);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Erro ao carregar agentes' });
+    console.error(LOG_CONSTANTS.DATABASE_CONTROLLER_ERROR, error);
+    res.status(500).json({ error: error.message || DB_CONSTANTS.ERROR_LOAD_AGENTS });
   }
 }
 
@@ -34,7 +39,8 @@ export async function saveAgent(req: Request, res: Response) {
     const saved = await dbClient.saveAgent(agent);
     res.json(saved);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Erro ao salvar agente' });
+    console.error(LOG_CONSTANTS.DATABASE_CONTROLLER_ERROR, error);
+    res.status(500).json({ error: error.message || DB_CONSTANTS.ERROR_SAVE_AGENT });
   }
 }
 
@@ -44,7 +50,8 @@ export async function deleteAgent(req: Request, res: Response) {
     await dbClient.deleteAgent(id);
     res.json({ success: true, id });
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Erro ao remover agente' });
+    console.error(LOG_CONSTANTS.DATABASE_CONTROLLER_ERROR, error);
+    res.status(500).json({ error: error.message || DB_CONSTANTS.ERROR_DELETE_AGENT });
   }
 }
 
@@ -53,7 +60,8 @@ export async function getWorkflows(req: Request, res: Response) {
     const workflows = await dbClient.getWorkflows();
     res.json(workflows);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Erro ao carregar fluxos' });
+    console.error(LOG_CONSTANTS.DATABASE_CONTROLLER_ERROR, error);
+    res.status(500).json({ error: error.message || DB_CONSTANTS.ERROR_LOAD_WORKFLOWS });
   }
 }
 
@@ -63,7 +71,8 @@ export async function saveWorkflow(req: Request, res: Response) {
     const saved = await dbClient.saveWorkflow(workflow);
     res.json(saved);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Erro ao salvar fluxo' });
+    console.error(LOG_CONSTANTS.DATABASE_CONTROLLER_ERROR, error);
+    res.status(500).json({ error: error.message || DB_CONSTANTS.ERROR_SAVE_WORKFLOW });
   }
 }
 
@@ -73,7 +82,8 @@ export async function saveRun(req: Request, res: Response) {
     const saved = await dbClient.saveRun(run);
     res.json(saved);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Erro ao registrar execução' });
+    console.error(LOG_CONSTANTS.DATABASE_CONTROLLER_ERROR, error);
+    res.status(500).json({ error: error.message || DB_CONSTANTS.ERROR_SAVE_RUN });
   }
 }
 
@@ -83,7 +93,8 @@ export async function saveUser(req: Request, res: Response) {
     const saved = await dbClient.saveUser(user);
     res.json(saved);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Erro ao salvar usuário' });
+    console.error(LOG_CONSTANTS.DATABASE_CONTROLLER_ERROR, error);
+    res.status(500).json({ error: error.message || DB_CONSTANTS.ERROR_SAVE_USER });
   }
 }
 
@@ -93,7 +104,8 @@ export async function saveEval(req: Request, res: Response) {
     const saved = await dbClient.saveEval(evalCase);
     res.json(saved);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Erro ao salvar avaliação' });
+    console.error(LOG_CONSTANTS.DATABASE_CONTROLLER_ERROR, error);
+    res.status(500).json({ error: error.message || DB_CONSTANTS.ERROR_SAVE_EVAL });
   }
 }
 
@@ -103,6 +115,7 @@ export async function saveVersion(req: Request, res: Response) {
     const saved = await dbClient.saveVersion(version);
     res.json(saved);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Erro ao salvar versão' });
+    console.error(LOG_CONSTANTS.DATABASE_CONTROLLER_ERROR, error);
+    res.status(500).json({ error: error.message || DB_CONSTANTS.ERROR_SAVE_VERSION });
   }
 }

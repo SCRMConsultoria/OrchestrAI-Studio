@@ -23,6 +23,9 @@ import {
   WorkflowRun,
 } from '../../types';
 
+import { LOG_CONSTANTS } from '../constants/logConstants';
+import { DB_CONSTANTS } from '../constants/dbConstants';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -71,27 +74,27 @@ export class DatabaseClient {
         });
 
         this.pool.on('error', (err) => {
-          console.warn('[Postgres Pool Error]:', err.message);
+          console.warn(LOG_CONSTANTS.POSTGRES_POOL_ERROR, err.message);
           this.isConnected = false;
         });
 
         this.pool.connect((err, client, release) => {
           if (err) {
-            console.warn('[Postgres Connection Notice]:', err.message, '- Using resilient in-memory store.');
+            console.warn(LOG_CONSTANTS.POSTGRES_CONNECTION_NOTICE, err.message);
             this.isConnected = false;
           } else {
             this.isConnected = true;
-            this.dbEngine = 'PostgreSQL';
+            this.dbEngine = DB_CONSTANTS.ENGINE_POSTGRES;
             release();
-            console.log('[Postgres Connected]: Successfully established connection to PostgreSQL database.');
+            console.log(LOG_CONSTANTS.POSTGRES_CONNECTED);
             this.runMigrations();
           }
         });
       } catch (err: any) {
-        console.warn('[Postgres Init Warning]:', err.message);
+        console.warn(LOG_CONSTANTS.POSTGRES_INIT_WARN, err.message);
       }
     } else {
-      console.log('[Database Notice]: No DATABASE_URL provided. Operating with high-resilience in-memory store.');
+      console.log(LOG_CONSTANTS.POSTGRES_IN_MEMORY_NOTICE);
     }
   }
 
@@ -102,11 +105,11 @@ export class DatabaseClient {
       if (fs.existsSync(schemaPath)) {
         const schemaSql = fs.readFileSync(schemaPath, 'utf-8');
         await this.pool.query(schemaSql);
-        console.log('[Postgres Schema]: Schema checked and synchronized successfully.');
+        console.log(LOG_CONSTANTS.POSTGRES_SCHEMA_SYNCED);
       }
       await this.seedIfEmpty();
     } catch (err: any) {
-      console.error('[Postgres Migration Error]:', err.message);
+      console.error(LOG_CONSTANTS.POSTGRES_MIGRATION_ERROR, err.message);
     }
   }
 
@@ -179,17 +182,17 @@ export class DatabaseClient {
             ]
           );
         }
-        console.log('[Postgres Seeding]: Baseline datasets successfully seeded.');
+        console.log(LOG_CONSTANTS.POSTGRES_SEEDING_COMPLETE);
       }
     } catch (err: any) {
-      console.warn('[Postgres Seeding Warning]:', err.message);
+      console.warn(LOG_CONSTANTS.POSTGRES_SEEDING_WARN, err.message);
     }
   }
 
   public getStatus() {
     return {
       connected: this.isConnected,
-      engine: this.isConnected ? 'PostgreSQL' : 'In-Memory Resilient Cache',
+      engine: this.isConnected ? DB_CONSTANTS.ENGINE_POSTGRES : DB_CONSTANTS.ENGINE_MEMORY_CACHE,
       timestamp: new Date().toISOString(),
       counts: {
         models: memoryStore.models.length,

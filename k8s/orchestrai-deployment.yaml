@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orchestrai-studio
+  namespace: orchestrai
+  labels:
+    app: orchestrai-studio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orchestrai-studio
+  template:
+    metadata:
+      labels:
+        app: orchestrai-studio
+    spec:
+      containers:
+        - name: app
+          image: orchestrai-studio:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: PORT
+              value: "3000"
+            - name: DATABASE_URL
+              value: "postgresql://orchestrai:orchestrai_secret_password@postgres.orchestrai.svc.cluster.local:5432/orchestrai_db"
+            - name: POSTGRES_HOST
+              value: "postgres.orchestrai.svc.cluster.local"
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_DB
+              value: "orchestrai_db"
+            - name: POSTGRES_USER
+              value: "orchestrai"
+            - name: POSTGRES_PASSWORD
+              value: "orchestrai_secret_password"
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: orchestrai-secrets
+                  key: GEMINI_API_KEY
+                  optional: true
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orchestrai-studio-service
+  namespace: orchestrai
+spec:
+  type: NodePort
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30300
+      name: http
+  selector:
+    app: orchestrai-studio

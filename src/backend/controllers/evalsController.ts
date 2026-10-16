@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { GoogleGenAI } from '@google/genai';
 import { EVALS_CONSTANTS } from '../constants/evalsConstants';
+import { LOG_CONSTANTS } from '../constants/logConstants';
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY || '',
@@ -64,7 +65,7 @@ export async function runEvaluationTest(req: Request, res: Response) {
       costPassed,
     });
   } catch (error: any) {
-    console.error('Evals controller error:', error);
+    console.error(LOG_CONSTANTS.EVALS_CONTROLLER_ERROR, error);
     res.status(500).json({ error: error.message || EVALS_CONSTANTS.ERROR_RUNNING_EVALUATION });
   }
 }

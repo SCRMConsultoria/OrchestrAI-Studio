@@ -24,4 +24,23 @@ export const MODEL_CONSTANTS = {
 
   SHIELD_PROMPT_INJECTION: 'PromptInjectionShield',
   SHIELD_KEYWORD_BLOCK: 'KeywordBlockShield',
+
+  REDAC_CPF: '[CPF REDIGIDO]',
+  REDAC_EMAIL: '[EMAIL REDIGIDO]',
+  REDAC_CARD: '[CARTAO REDIGIDO]',
+
+  BUILD_SIMULATED_OUTPUT: (model: string, promptPreview: string) =>
+    `[OrchestrAI Engine - Resposta Sintetizada]
+Com base nos parâmetros do agente (${model}):
+A análise solicitada sobre "${promptPreview}..." foi processada pelo orquestrador.
+
+Pontos Chave Identificados:
+1. Validação de arquitetura e mitigação de vulnerabilidades concluída.
+2. Parâmetros operacionais verificados com sucesso dentro dos limites de conformidade e cota.
+3. Trilha de auditoria gerada com carimbo temporal e hash de validação imutável.`,
+
+  BUILD_SIMULATED_SYSTEM: (provider: string, model: string, systemInstruction?: string) =>
+    `[Provider Simulation: ${provider.toUpperCase()} / Model: ${model}]
+${systemInstruction ? `System Instructions:\n${systemInstruction}\n` : ''}
+Respond accurately and adhere strictly to requested formatting and cognitive style of ${model}.`,
 } as const;

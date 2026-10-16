@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { GoogleGenAI } from '@google/genai';
 import { TOOLS_CONSTANTS } from '../constants/toolsConstants';
+import { LOG_CONSTANTS } from '../constants/logConstants';
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY || '',
@@ -41,7 +42,7 @@ export async function searchWeb(req: Request, res: Response) {
       queriedAt: new Date().toISOString(),
     });
   } catch (error: any) {
-    console.error('Tools controller search error:', error);
+    console.error(LOG_CONSTANTS.TOOLS_CONTROLLER_ERROR, error);
     res.status(500).json({ error: error.message || TOOLS_CONSTANTS.ERROR_SEARCH_FAILED });
   }
 }

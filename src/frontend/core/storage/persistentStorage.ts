@@ -8,6 +8,7 @@ import {
   UserAccount,
   InvoiceItem,
   EvaluationCase,
+  ModelDescriptor,
 } from '../../../types';
 import { LanguageCode } from '../constants/translations';
 
@@ -183,5 +184,21 @@ export class PersistentStorage {
   public static setEvalCases(cases: EvaluationCase[]): void {
     if (typeof window === 'undefined') return;
     localStorage.setItem(STORAGE_KEYS.EVALS, JSON.stringify(cases));
+  }
+
+  public static getModels(fallback: ModelDescriptor[] = []): ModelDescriptor[] {
+    if (typeof window === 'undefined') return fallback;
+    const raw = localStorage.getItem('orchestrai_models');
+    if (!raw) return fallback;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return fallback;
+    }
+  }
+
+  public static setModels(models: ModelDescriptor[]): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('orchestrai_models', JSON.stringify(models));
   }
 }

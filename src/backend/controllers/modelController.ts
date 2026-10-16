@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { GoogleGenAI } from '@google/genai';
 import { MODEL_CONSTANTS } from '../constants/modelConstants';
+import { LOG_CONSTANTS } from '../constants/logConstants';
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY || '',
@@ -78,7 +79,7 @@ export async function generateModelContent(req: Request, res: Response) {
           config,
         });
       } catch (err: any) {
-        console.warn(`Primary model ${model} failed, trying gemini-3.1-flash-lite fallback:`, err.message);
+        console.warn(LOG_CONSTANTS.MODEL_FALLBACK_WARN(model, err.message));
         try {
           response = await ai.models.generateContent({
             model: 'gemini-3.1-flash-lite',
@@ -86,14 +87,7 @@ export async function generateModelContent(req: Request, res: Response) {
             config,
           });
         } catch (fallbackErr: any) {
-          const simulatedOutput = `[OrchestrAI Engine - Resposta Sintetizada]
-Com base nos parâmetros do agente (${model}):
-A análise solicitada sobre "${prompt.slice(0, 80)}..." foi processada pelo orquestrador.
-
-Pontos Chave Identificados:
-1. Validação de arquitetura e mitigação de vulnerabilidades concluída.
-2. Parâmetros operacionais verificados com sucesso dentro dos limites de conformidade e cota.
-3. Trilha de auditoria gerada com carimbo temporal e hash de validação imutável.`;
+          const simulatedOutput = MODEL_CONSTANTS.BUILD_SIMULATED_OUTPUT(model, prompt.slice(0, 80));
 
           return res.json({
             output: simulatedOutput,
@@ -112,9 +106,9 @@ Pontos Chave Identificados:
       let sanitizedOutput = textOutput;
       if (guardrails?.redactPii) {
         sanitizedOutput = sanitizedOutput
-          .replace(/\b\d{3}\.\d{3}\.\d{3}-\d{2}\b/g, '[CPF REDIGIDO]')
-          .replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b/g, '[EMAIL REDIGIDO]')
-          .replace(/\b\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b/g, '[CARTAO REDIGIDO]');
+          .replace(/\b\d{3}\.\d{3}\.\d{3}-\d{2}\b/g, MODEL_CONSTANTS.REDAC_CPF)
+          .replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b/g, MODEL_CONSTANTS.REDAC_EMAIL)
+          .replace(/\b\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b/g, MODEL_CONSTANTS.REDAC_CARD);
       }
 
       const searchChunks = (response.candidates?.[0] as any)?.groundingMetadata?.groundingChunks || [];
@@ -139,9 +133,7 @@ Pontos Chave Identificados:
     }
 
     // Anthropic Claude, OpenAI / Codex, and Custom endpoints:
-    const simulatedSystem = `[Provider Simulation: ${provider.toUpperCase()} / Model: ${model}]
-${systemInstruction ? `System Instructions:\n${systemInstruction}\n` : ''}
-Respond accurately and adhere strictly to requested formatting and cognitive style of ${model}.`;
+    const simulatedSystem = MODEL_CONSTANTS.BUILD_SIMULATED_SYSTEM(provider, model, systemInstruction);
 
     const response = await ai.models.generateContent({
       model: 'gemini-3.1-flash-lite',
@@ -167,7 +159,7 @@ Respond accurately and adhere strictly to requested formatting and cognitive sty
       sources: [],
     });
   } catch (error: any) {
-    console.error('Error in model controller:', error);
+    console.error(LOG_CONSTANTS.MODEL_CONTROLLER_ERROR, error);
     res.status(500).json({ error: error.message || MODEL_CONSTANTS.ERROR_GENERATION_FAILED });
   }
 }

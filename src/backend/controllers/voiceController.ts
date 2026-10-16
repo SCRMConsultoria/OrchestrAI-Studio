@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { GoogleGenAI } from '@google/genai';
 import { BACKEND_VOICE_CONSTANTS } from '../constants/voiceConstants';
+import { LOG_CONSTANTS } from '../constants/logConstants';
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY || '',
@@ -49,7 +50,7 @@ export async function synthesizeSpeech(req: Request, res: Response) {
       voiceName,
     });
   } catch (error: any) {
-    console.error('Error in voice controller:', error);
+    console.error(LOG_CONSTANTS.VOICE_CONTROLLER_ERROR, error);
     res.status(500).json({ error: error.message || BACKEND_VOICE_CONSTANTS.ERROR_TTS_FAILED });
   }
 }

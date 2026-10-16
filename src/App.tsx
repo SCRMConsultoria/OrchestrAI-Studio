@@ -1,15 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  INITIAL_AGENTS,
-  INITIAL_WORKFLOWS,
-  INITIAL_RECENT_RUNS,
-  INITIAL_EVAL_CASES,
-  INITIAL_VERSIONS,
-  INITIAL_USERS,
-  INITIAL_INVOICES,
-  AVAILABLE_MODELS,
-} from './data/initialData';
-import {
   AgentConfig,
   WorkflowDefinition,
   WorkflowRun,
@@ -20,6 +10,7 @@ import {
   UserRole,
   ThemeMode,
   CustomThemeSettings,
+  ModelDescriptor,
 } from './types';
 
 // Modular Frontend Architecture (Features & Shared Modules)
@@ -41,6 +32,7 @@ import { signal } from './frontend/core/signals/signal';
 import { useSignal } from './frontend/core/signals/reactAdapter';
 import { PersistentStorage } from './frontend/core/storage/persistentStorage';
 import { LanguageCode, TRANSLATIONS } from './frontend/core/constants/translations';
+import { USER_CONSTANTS } from './frontend/core/constants/userConstants';
 import { PanelLeftOpen } from 'lucide-react';
 import { ApiService } from './frontend/core/services/apiService';
 
@@ -69,31 +61,34 @@ export default function App() {
   const [currentTheme, setCurrentTheme] = useSignal(themeModeSignal);
   const [customThemeSettings, setCustomThemeSettings] = useSignal(customThemeSignal);
 
-  // Entities state with persistence fallbacks
+  // Entities state loaded dynamically from PostgreSQL Database & Persistent Cache
+  const [models, setModels] = useState<ModelDescriptor[]>(() =>
+    PersistentStorage.getModels([])
+  );
   const [agents, setAgents] = useState<AgentConfig[]>(() =>
-    PersistentStorage.getAgents(INITIAL_AGENTS)
+    PersistentStorage.getAgents([])
   );
   const [workflows, setWorkflows] = useState<WorkflowDefinition[]>(() =>
-    PersistentStorage.getWorkflows(INITIAL_WORKFLOWS)
+    PersistentStorage.getWorkflows([])
   );
   const [runs, setRuns] = useState<WorkflowRun[]>(() =>
-    PersistentStorage.getRuns(INITIAL_RECENT_RUNS)
+    PersistentStorage.getRuns([])
   );
   const [evalCases, setEvalCases] = useState<EvaluationCase[]>(() =>
-    PersistentStorage.getEvalCases(INITIAL_EVAL_CASES)
+    PersistentStorage.getEvalCases([])
   );
   const [versions, setVersions] = useState<AgentVersion[]>(() =>
-    PersistentStorage.getVersions(INITIAL_VERSIONS)
+    PersistentStorage.getVersions([])
   );
   const [users, setUsers] = useState<UserAccount[]>(() =>
-    PersistentStorage.getUsers(INITIAL_USERS)
+    PersistentStorage.getUsers([])
   );
   const [invoices, setInvoices] = useState<InvoiceItem[]>(() =>
-    PersistentStorage.getInvoices(INITIAL_INVOICES)
+    PersistentStorage.getInvoices([])
   );
 
   const [activeTab, setActiveTab] = useState<NavTab>('missions');
-  const [selectedAgentId, setSelectedAgentId] = useState<string>(agents[0]?.id || INITIAL_AGENTS[0].id);
+  const [selectedAgentId, setSelectedAgentId] = useState<string>('');
   const [currentRole, setCurrentRole] = useState<UserRole>('admin');
   const [isAudioMuted, setIsAudioMuted] = useState<boolean>(false);
   const [isCustomStudioOpen, setIsCustomStudioOpen] = useState<boolean>(false);
@@ -102,13 +97,39 @@ export default function App() {
   useEffect(() => {
     ApiService.loadInitialData().then((dbData) => {
       if (dbData) {
-        if (dbData.agents?.length) setAgents(dbData.agents);
-        if (dbData.workflows?.length) setWorkflows(dbData.workflows);
-        if (dbData.runs?.length) setRuns(dbData.runs);
-        if (dbData.evals?.length) setEvalCases(dbData.evals);
-        if (dbData.versions?.length) setVersions(dbData.versions);
-        if (dbData.users?.length) setUsers(dbData.users);
-        if (dbData.invoices?.length) setInvoices(dbData.invoices);
+        if (dbData.models?.length) {
+          setModels(dbData.models);
+          PersistentStorage.setModels(dbData.models);
+        }
+        if (dbData.agents?.length) {
+          setAgents(dbData.agents);
+          PersistentStorage.setAgents(dbData.agents);
+          setSelectedAgentId((prev) => prev || dbData.agents[0].id);
+        }
+        if (dbData.workflows?.length) {
+          setWorkflows(dbData.workflows);
+          PersistentStorage.setWorkflows(dbData.workflows);
+        }
+        if (dbData.runs?.length) {
+          setRuns(dbData.runs);
+          PersistentStorage.setRuns(dbData.runs);
+        }
+        if (dbData.evals?.length) {
+          setEvalCases(dbData.evals);
+          PersistentStorage.setEvalCases(dbData.evals);
+        }
+        if (dbData.versions?.length) {
+          setVersions(dbData.versions);
+          PersistentStorage.setVersions(dbData.versions);
+        }
+        if (dbData.users?.length) {
+          setUsers(dbData.users);
+          PersistentStorage.setUsers(dbData.users);
+        }
+        if (dbData.invoices?.length) {
+          setInvoices(dbData.invoices);
+          PersistentStorage.setInvoices(dbData.invoices);
+        }
       }
     });
   }, []);
@@ -139,7 +160,7 @@ export default function App() {
     PersistentStorage.setThemeMode('custom');
   };
 
-  const currentUser = users.find((u) => u.role === currentRole) || users[0];
+  const currentUser = users.find((u) => u.role === currentRole) || users[0] || USER_CONSTANTS.DEFAULT_FALLBACK_USER;
   const t = TRANSLATIONS[currentLanguage];
 
   // Theme application via CSS variables
@@ -416,7 +437,7 @@ export default function App() {
                 setSelectedAgentId(ag.id);
                 setActiveTab('evals');
               }}
-              availableModels={AVAILABLE_MODELS}
+              availableModels={models}
               currentLanguage={currentLanguage}
             />
           )}
@@ -470,7 +491,7 @@ export default function App() {
 
           {activeTab === 'models' && (
             <ModelsCatalogPanel
-              availableModels={AVAILABLE_MODELS}
+              availableModels={models}
               agents={agents}
               onUpdateAgent={handleUpdateAgent}
               currentLanguage={currentLanguage}

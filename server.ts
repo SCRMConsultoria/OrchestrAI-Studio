@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { apiRouter } from './src/backend/routes/apiRoutes';
+import { LOG_CONSTANTS } from './src/backend/constants/logConstants';
 
 dotenv.config();
 
@@ -34,7 +35,7 @@ async function startServer() {
   }
 
   app.listen(PORT, () => {
-    console.log(`OrchestrAI Studio (Modular Backend/Frontend) running on port ${PORT}`);
+    console.log(LOG_CONSTANTS.SERVER_START(PORT));
   });
 }
 
