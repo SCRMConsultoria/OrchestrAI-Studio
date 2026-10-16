@@ -1,0 +1,6 @@
+{
+  "summary": "Plano de implementação revisado incorporando: 1) Seleção configurável multimodelo (Gemini, Codex/GPT, Claude, etc.); 2) Construtor visual de agentes com tela interativa de nós arrastar-e-soltar (drag & drop), conectores de ferramentas e guardrails customizados; 3) Sandbox de prévias em tempo real, suíte de avaliações em linha (evals) e versionamento completo com rollback; 4) Painel financeiro de custos, precificação, faturamento e vendas; 5) Gerenciador completo de contas de usuários e equipes.",
+  "updatedAt": "2026-10-16T14:24:10.651893926Z",
+  "requestFeedback": true,
+  "userFacing": true
+}
